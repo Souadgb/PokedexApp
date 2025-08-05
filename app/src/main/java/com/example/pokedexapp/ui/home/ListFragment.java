@@ -1,25 +1,28 @@
 package com.example.pokedexapp.ui.home;
 
 import android.os.Bundle;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.pokedexapp.Pokemon;
 import com.example.pokedexapp.PokemonAdapter;
 import com.example.pokedexapp.R;
+import com.example.pokedexapp.network.PokemonFetcher;
 import com.example.pokedexapp.ui.notifications.DetailFragment;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
 
 public class ListFragment extends Fragment {
 
     private RecyclerView recyclerView;
-    private List<Pokemon> pokemonList;
+    private PokemonAdapter adapter;
+    private List<Pokemon> pokemonList = new ArrayList<>();
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -29,14 +32,7 @@ public class ListFragment extends Fragment {
         recyclerView = view.findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
 
-        pokemonList = Arrays.asList(
-                new Pokemon("Pikachu", R.drawable.pikachu),
-                new Pokemon("Bulbasaur", R.drawable.bulbasaur),
-                new Pokemon("Charmander", R.drawable.charmander),
-                new Pokemon("Squirtle", R.drawable.squirtle)
-        );
-
-        PokemonAdapter adapter = new PokemonAdapter(pokemonList, pokemon -> {
+        adapter = new PokemonAdapter(pokemonList, pokemon -> {
             Fragment detailFragment = new DetailFragment();
             Bundle args = new Bundle();
             args.putString("name", pokemon.getName());
@@ -47,8 +43,25 @@ public class ListFragment extends Fragment {
                     .addToBackStack(null)
                     .commit();
         });
-
         recyclerView.setAdapter(adapter);
+
+        // Appel API pour charger les Pokémon
+        PokemonFetcher fetcher = new PokemonFetcher(requireContext());
+        fetcher.fetchPokemonList(
+                names -> {
+                    int idCounter = 1;
+                    for (String name : names) {
+                        String imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/" + idCounter + ".png";
+                        pokemonList.add(new Pokemon(name, imageUrl));
+                        idCounter++;
+                    }
+                    adapter.notifyDataSetChanged();
+                },
+                error -> {
+                    // Tu peux afficher une Toast ou loguer l'erreur ici
+                }
+        );
+
         return view;
     }
 }

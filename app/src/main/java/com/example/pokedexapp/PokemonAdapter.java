@@ -5,7 +5,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
+
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.bumptech.glide.Glide;
+
 import java.util.List;
 
 public class PokemonAdapter extends RecyclerView.Adapter<PokemonAdapter.ViewHolder> {
@@ -34,7 +38,12 @@ public class PokemonAdapter extends RecyclerView.Adapter<PokemonAdapter.ViewHold
 
         public void bind(Pokemon pokemon, OnItemClickListener listener) {
             name.setText(pokemon.getName());
-            image.setImageResource(pokemon.getImageResId());
+
+            // Utilise Glide pour charger l’image à partir de l’URL
+            Glide.with(image.getContext())
+                    .load(pokemon.getImageUrl())
+                    .into(image);
+
             itemView.setOnClickListener(v -> listener.onItemClick(pokemon));
         }
     }

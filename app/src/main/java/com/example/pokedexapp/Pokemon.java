@@ -1,14 +1,19 @@
 package com.example.pokedexapp;
 
 public class Pokemon {
-    private String name;
-    private int imageResId;
+    private final String name;
+    private final String imageUrl;
 
-    public Pokemon(String name, int imageResId) {
+    public Pokemon(String name, String imageUrl) {
         this.name = name;
-        this.imageResId = imageResId;
+        this.imageUrl = imageUrl;
     }
 
-    public String getName() { return name; }
-    public int getImageResId() { return imageResId; }
+    public String getName() {
+        return name;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
 }
