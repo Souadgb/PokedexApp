@@ -18,8 +18,8 @@ public class PokemonAdapter extends RecyclerView.Adapter<PokemonAdapter.ViewHold
         void onItemClick(Pokemon pokemon);
     }
 
-    private List<Pokemon> list;
-    private OnItemClickListener listener;
+    private final List<Pokemon> list;
+    private final OnItemClickListener listener;
 
     public PokemonAdapter(List<Pokemon> list, OnItemClickListener listener) {
         this.list = list;
@@ -38,30 +38,24 @@ public class PokemonAdapter extends RecyclerView.Adapter<PokemonAdapter.ViewHold
 
         public void bind(Pokemon pokemon, OnItemClickListener listener) {
             name.setText(pokemon.getName());
-
-            // Utilise Glide pour charger l’image à partir de l’URL
             Glide.with(image.getContext())
                     .load(pokemon.getImageUrl())
                     .into(image);
-
-            itemView.setOnClickListener(v -> listener.onItemClick(pokemon));
+            itemView.setOnClickListener(v -> {
+                if (listener != null) listener.onItemClick(pokemon);
+            });
         }
     }
 
-    @Override
-    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+    @Override public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View v = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.item_pokemon, parent, false);
         return new ViewHolder(v);
     }
 
-    @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
+    @Override public void onBindViewHolder(ViewHolder holder, int position) {
         holder.bind(list.get(position), listener);
     }
 
-    @Override
-    public int getItemCount() {
-        return list.size();
-    }
+    @Override public int getItemCount() { return list.size(); }
 }

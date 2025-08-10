@@ -32,10 +32,11 @@ public class ListFragment extends Fragment {
         recyclerView = view.findViewById(R.id.recycler_view);
         recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
 
-        adapter = new PokemonAdapter(pokemonList, pokemon -> {
+        adapter = new PokemonAdapter( pokemonList, pokemon -> {
             Fragment detailFragment = new DetailFragment();
             Bundle args = new Bundle();
             args.putString("name", pokemon.getName());
+            args.putString("imageUrl", pokemon.getImageUrl()); // ✅ send image too
             detailFragment.setArguments(args);
             requireActivity().getSupportFragmentManager()
                     .beginTransaction()
@@ -45,7 +46,7 @@ public class ListFragment extends Fragment {
         });
         recyclerView.setAdapter(adapter);
 
-        // Appel API pour charger les Pokémon
+        // Fetch Pokémon list from API
         PokemonFetcher fetcher = new PokemonFetcher(requireContext());
         fetcher.fetchPokemonList(
                 names -> {
@@ -58,7 +59,7 @@ public class ListFragment extends Fragment {
                     adapter.notifyDataSetChanged();
                 },
                 error -> {
-                    // Tu peux afficher une Toast ou loguer l'erreur ici
+                    // Optionally log or display error
                 }
         );
 
