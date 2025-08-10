@@ -37,6 +37,7 @@ android {
 }
 
 dependencies {
+    // AndroidX / Navigation / Lifecycle
     implementation(libs.appcompat)
     implementation(libs.material)
     implementation(libs.constraintlayout)
@@ -45,19 +46,27 @@ dependencies {
     implementation(libs.navigation.fragment)
     implementation(libs.navigation.ui)
 
-    // Volley for network requests
+    // --- Networking ---
+    // (Keep Volley if you still use it elsewhere; safe to remove if fully switching to Retrofit)
     implementation("com.android.volley:volley:1.2.1")
 
-    // Glide for image loading
-    implementation("com.github.bumptech.glide:glide:4.15.1")
-    annotationProcessor("com.github.bumptech.glide:compiler:4.15.1")
+    // Retrofit + Gson + OkHttp logging
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
-    // Room for local database (Java version)
+    // --- Images (Glide) ---
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+    annotationProcessor("com.github.bumptech.glide:compiler:4.16.0")
+
+    // --- Room (Java) ---
     val room_version = "2.6.1"
     implementation("androidx.room:room-runtime:$room_version")
     annotationProcessor("androidx.room:room-compiler:$room_version")
-    implementation("androidx.room:room-ktx:$room_version") // optional: for coroutines support
+    // Optional; only needed if you plan to use coroutines/Flow from Kotlin:
+    implementation("androidx.room:room-ktx:$room_version")
 
+    // --- Tests ---
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

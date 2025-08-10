@@ -10,10 +10,12 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.pokedexapp.AppDatabase;
+import com.example.pokedexapp.FavoritePokemon;
+import com.example.pokedexapp.FavoritePokemonDao;
 import com.example.pokedexapp.Pokemon;
 import com.example.pokedexapp.PokemonAdapter;
-import com.example.pokedexapp.PokemonEntity;
 import com.example.pokedexapp.R;
+import com.example.pokedexapp.ui.notifications.DetailFragment;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,8 +33,7 @@ public class FavoritesFragment extends Fragment {
         recyclerView = view.findViewById(R.id.recycler_favorites);
         recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
 
-        // premier chargement
-        loadFavorites();
+        loadFavorites(); // first load
 
         return view;
     }
@@ -40,32 +41,44 @@ public class FavoritesFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        // recharger quand on revient sur l’onglet
-        loadFavorites();
+        loadFavorites(); // refresh when returning to tab
     }
 
     private void loadFavorites() {
         new Thread(() -> {
-            List<PokemonEntity> entities = AppDatabase
-                    .getInstance(requireContext())
-                    .pokemonDao()
-                    .getAllFavorites();
+            FavoritePokemonDao dao = AppDatabase
+                    .getInstance(requireContext().getApplicationContext())
+                    .favoritePokemonDao();
+
+            List<FavoritePokemon> favEntities = dao.getAllFavorites();
 
             List<Pokemon> favorites = new ArrayList<>();
-            for (PokemonEntity e : entities) {
+            for (FavoritePokemon e : favEntities) {
                 favorites.add(new Pokemon(e.name, e.imageUrl));
             }
 
             requireActivity().runOnUiThread(() -> {
+                // click opens the detail page from favorites
+                PokemonAdapter.OnItemClickListener onClick = pokemon -> {
+                    Bundle args = new Bundle();
+                    args.putString(DetailFragment.ARG_NAME_OR_ID, pokemon.getName());
+
+                    DetailFragment fragment = new DetailFragment();
+                    fragment.setArguments(args);
+
+                    requireActivity().getSupportFragmentManager()
+                            .beginTransaction()
+                            .replace(R.id.nav_host_fragment_activity_main, fragment) // change container id if different
+                            .addToBackStack(null)
+                            .commit();
+                };
+
                 if (adapter == null) {
-                    adapter = new PokemonAdapter(favorites, pokemon -> {
-                        // optionnel : ouvrir la fiche depuis Favoris
-                    });
+                    adapter = new PokemonAdapter(favorites, onClick);
                     recyclerView.setAdapter(adapter);
                 } else {
-                    // mettre à jour les données
-                    // (simplement recréer l’adapter si tu n’as pas de setData())
-                    adapter = new PokemonAdapter(favorites, null);
+                    // If your adapter has a setter, use it; otherwise recreate adapter
+                    adapter = new PokemonAdapter(favorites, onClick);
                     recyclerView.setAdapter(adapter);
                 }
             });

@@ -3,10 +3,10 @@ package com.example.pokedexapp;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "favorites")
+@Entity(tableName = "pokemon_list")
 public class PokemonEntity {
     @PrimaryKey(autoGenerate = true)
-    public int id;
+    public int id;          // local row id (not the API id)
 
     public String name;
     public String imageUrl;

@@ -1,23 +1,21 @@
 package com.example.pokedexapp;
 
 import androidx.room.Dao;
-import androidx.room.Delete;
 import androidx.room.Insert;
+import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 
 import java.util.List;
 
 @Dao
 public interface PokemonDao {
-    @Insert
-    void insert(PokemonEntity pokemon);
 
-    @Delete
-    void delete(PokemonEntity pokemon);
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    void insertAll(List<PokemonEntity> items);
 
-    @Query("SELECT * FROM favorites")
-    List<PokemonEntity> getAllFavorites();
+    @Query("SELECT * FROM pokemon_list")
+    List<PokemonEntity> getAll();
 
-    @Query("DELETE FROM favorites WHERE name = :pokemonName")
-    void deleteByName(String pokemonName);
+    @Query("DELETE FROM pokemon_list")
+    void clear();
 }

@@ -1,22 +1,21 @@
 package com.example.pokedexapp;
 
 import android.content.Context;
+
 import androidx.room.Database;
 import androidx.room.Room;
 import androidx.room.RoomDatabase;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
-@Database(entities = {PokemonEntity.class}, version = 2, exportSchema = false) // bump version if needed
+@Database(
+        entities = { PokemonEntity.class, FavoritePokemon.class },
+        version = 4,                 // bumped to regenerate schema
+        exportSchema = false
+)
 public abstract class AppDatabase extends RoomDatabase {
-
     private static volatile AppDatabase INSTANCE;
 
-    // Single background thread for DB writes
-    public static final ExecutorService databaseWriteExecutor =
-            Executors.newSingleThreadExecutor();
-
     public abstract PokemonDao pokemonDao();
+    public abstract FavoritePokemonDao favoritePokemonDao();
 
     public static AppDatabase getInstance(Context context) {
         if (INSTANCE == null) {
@@ -27,7 +26,7 @@ public abstract class AppDatabase extends RoomDatabase {
                                     AppDatabase.class,
                                     "pokemon_db"
                             )
-                            .fallbackToDestructiveMigration() // ok for class project
+                            .fallbackToDestructiveMigration()
                             .build();
                 }
             }

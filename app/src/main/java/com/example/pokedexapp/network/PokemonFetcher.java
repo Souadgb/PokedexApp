@@ -13,6 +13,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.function.Consumer;
 
 public class PokemonFetcher {
@@ -21,18 +22,19 @@ public class PokemonFetcher {
     private final RequestQueue requestQueue;
 
     public PokemonFetcher(Context context) {
-        requestQueue = Volley.newRequestQueue(context);
+        requestQueue = Volley.newRequestQueue(context.getApplicationContext());
     }
 
-    // Récupère les 151 premiers noms de Pokémon
+    /** Récupère les 151 premiers noms de Pokémon */
     public void fetchPokemonList(Consumer<List<String>> onSuccess, Consumer<String> onError) {
         String url = BASE_URL + "pokemon?limit=151";
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.GET, url, null,
                 response -> {
                     try {
                         JSONArray results = response.getJSONArray("results");
-                        List<String> names = new ArrayList<>();
+                        List<String> names = new ArrayList<>(results.length());
                         for (int i = 0; i < results.length(); i++) {
                             JSONObject p = results.getJSONObject(i);
                             names.add(p.getString("name"));
@@ -48,28 +50,55 @@ public class PokemonFetcher {
         requestQueue.add(request);
     }
 
-    // Récupère les détails d’un Pokémon à partir de son nom
-    public void fetchPokemonDetails(String name, Consumer<PokemonDetail> onSuccess, Consumer<String> onError) {
-        String url = BASE_URL + "pokemon/" + name.toLowerCase();
+    /**
+     * Détails d’un Pokémon par nom OU id (ex: "pikachu" ou "25").
+     * Retourne: id, name, height(dm), weight(hg), types, image officielle (fallback: front_default).
+     */
+    public void fetchPokemonDetailsByNameOrId(String nameOrId,
+                                              Consumer<PokemonDetail> onSuccess,
+                                              Consumer<String> onError) {
+        if (nameOrId == null || nameOrId.trim().isEmpty()) {
+            onError.accept("Invalid Pokémon identifier.");
+            return;
+        }
 
-        JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, url, null,
+        String url = BASE_URL + "pokemon/" + nameOrId.toLowerCase(Locale.ROOT);
+
+        JsonObjectRequest request = new JsonObjectRequest(
+                Request.Method.GET, url, null,
                 response -> {
                     try {
+                        String apiName = response.getString("name");
                         int id = response.getInt("id");
-                        int height = response.getInt("height");
-                        int weight = response.getInt("weight");
-                        String imageUrl = response.getJSONObject("sprites")
-                                .getString("front_default");
+                        int height = response.getInt("height"); // dm
+                        int weight = response.getInt("weight"); // hg
 
+                        // types
                         List<String> types = new ArrayList<>();
                         JSONArray typeArray = response.getJSONArray("types");
                         for (int i = 0; i < typeArray.length(); i++) {
-                            types.add(typeArray.getJSONObject(i)
-                                    .getJSONObject("type")
-                                    .getString("name"));
+                            JSONObject slot = typeArray.getJSONObject(i);
+                            JSONObject typeObj = slot.getJSONObject("type");
+                            types.add(typeObj.getString("name"));
                         }
 
-                        PokemonDetail detail = new PokemonDetail(id, name, height, weight, types, imageUrl);
+                        // image officielle + fallback
+                        String imageUrl = null;
+                        try {
+                            JSONObject sprites = response.getJSONObject("sprites");
+                            JSONObject other = sprites.optJSONObject("other");
+                            if (other != null) {
+                                JSONObject official = other.optJSONObject("official-artwork");
+                                if (official != null) {
+                                    imageUrl = official.optString("front_default", null);
+                                }
+                            }
+                            if (imageUrl == null) {
+                                imageUrl = sprites.optString("front_default", null);
+                            }
+                        } catch (Exception ignored) { }
+
+                        PokemonDetail detail = new PokemonDetail(id, apiName, height, weight, types, imageUrl);
                         onSuccess.accept(detail);
 
                     } catch (Exception e) {
@@ -80,5 +109,12 @@ public class PokemonFetcher {
         );
 
         requestQueue.add(request);
+    }
+
+    /** Compat: par nom */
+    public void fetchPokemonDetails(String name,
+                                    Consumer<PokemonDetail> onSuccess,
+                                    Consumer<String> onError) {
+        fetchPokemonDetailsByNameOrId(name, onSuccess, onError);
     }
 }
