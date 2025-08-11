@@ -10,9 +10,11 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.recyclerview.widget.SimpleItemAnimator;
+import androidx.navigation.NavController;
+import androidx.navigation.Navigation;
 
 import com.example.pokedexapp.Pokemon;
 import com.example.pokedexapp.PokemonAdapter;
@@ -21,6 +23,7 @@ import com.example.pokedexapp.filters.FilterState;
 import com.example.pokedexapp.filters.FiltersBottomSheet;
 import com.example.pokedexapp.network.PokemonFetcher;
 import com.example.pokedexapp.ui.notifications.DetailFragment;
+import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,6 +34,8 @@ public class ListFragment extends Fragment implements FiltersBottomSheet.OnApply
 
     private RecyclerView recycler;
     private PokemonAdapter adapter;
+    private CircularProgressIndicator progress;
+    private TextView emptyView;
 
     private final List<Pokemon> originalList = new ArrayList<>();
     private final List<Pokemon> filteredList = new ArrayList<>();
@@ -52,13 +57,23 @@ public class ListFragment extends Fragment implements FiltersBottomSheet.OnApply
 
         recycler = v.findViewById(R.id.recycler_pokemon);
         recycler.setLayoutManager(new GridLayoutManager(getContext(), 2));
+        recycler.addItemDecoration(new GridSpacingItemDecoration(2, dp(12), true));
+        // 🔒 Stop “jumping” animations on incremental updates
+        RecyclerView.ItemAnimator ia = recycler.getItemAnimator();
+        if (ia instanceof SimpleItemAnimator) {
+            ((SimpleItemAnimator) ia).setSupportsChangeAnimations(false);
+        }
 
-        // ✅ Use NavController to navigate to Detail (keeps bottom nav working)
+        progress = v.findViewById(R.id.progress);
+        emptyView = v.findViewById(R.id.empty_view);
+
+        // Use the Activity’s NavController (robust)
         PokemonAdapter.OnItemClickListener onClick = pokemon -> {
             Bundle args = new Bundle();
             args.putString(DetailFragment.ARG_NAME_OR_ID, pokemon.getName());
-            NavHostFragment.findNavController(ListFragment.this)
-                    .navigate(R.id.navigation_detail, args);
+            NavController navController =
+                    Navigation.findNavController(requireActivity(), R.id.nav_host_fragment_activity_main);
+            navController.navigate(R.id.navigation_detail, args);
         };
 
         adapter = new PokemonAdapter(filteredList, onClick);
@@ -71,13 +86,16 @@ public class ListFragment extends Fragment implements FiltersBottomSheet.OnApply
 
         View.OnClickListener openSheet = vv -> {
             FiltersBottomSheet s = FiltersBottomSheet.newInstance(ALL_TYPES, ALL_GENS, currentState);
-            s.setOnApplyListener(this); // ensure we always receive the callback
+            s.setOnApplyListener(this);
             s.show(getParentFragmentManager(), "filters");
         };
         chipType.setOnClickListener(openSheet);
         chipGen.setOnClickListener(openSheet);
         chipWeight.setOnClickListener(openSheet);
         chipHeight.setOnClickListener(openSheet);
+
+        // Show spinner until first items arrive
+        setLoading(true);
 
         // Load data incrementally so the page is not blank at first
         loadFromPokeApiIncremental();
@@ -91,9 +109,11 @@ public class ListFragment extends Fragment implements FiltersBottomSheet.OnApply
 
         fetcher.fetchFirst151PokemonIncremental(list -> {
             if (!isAdded()) return;
-            updatePokemonData(list); // refresh as items arrive
+            updatePokemonData(list);
+            if (list != null && !list.isEmpty()) setLoading(false); // hide spinner on first results
         }, err -> {
             if (isAdded()) {
+                setLoading(false);
                 Toast.makeText(requireContext(), "Erreur PokeAPI: " + err, Toast.LENGTH_SHORT).show();
             }
         });
@@ -103,12 +123,14 @@ public class ListFragment extends Fragment implements FiltersBottomSheet.OnApply
     public void updatePokemonData(List<Pokemon> newList) {
         originalList.clear();
         if (newList != null) originalList.addAll(newList);
+        // ✅ Keep a stable order so grid doesn’t shuffle as items stream in
+        originalList.sort((a, b) -> a.getName().compareToIgnoreCase(b.getName()));
         applyFilters();
     }
 
     // ===== Filters =====
     @Override
-    public void onApply(FilterState state) { // from FiltersBottomSheet.OnApplyFilters
+    public void onApply(FilterState state) {
         currentState = state;
         applyFilters();
     }
@@ -123,6 +145,7 @@ public class ListFragment extends Fragment implements FiltersBottomSheet.OnApply
             filteredList.add(p);
         }
         adapter.notifyDataSetChanged();
+        emptyView.setVisibility(filteredList.isEmpty() ? View.VISIBLE : View.GONE);
     }
 
     private boolean matchesTypes(Pokemon p, List<String> selectedTypes) {
@@ -132,14 +155,24 @@ public class ListFragment extends Fragment implements FiltersBottomSheet.OnApply
         }
         return false;
     }
+
     private boolean matchesGens(Pokemon p, List<String> selectedGens) {
         if (selectedGens == null || selectedGens.isEmpty()) return true;
         String gen = p.getGeneration();
         if (gen == null) return false;
         for (String g : selectedGens) {
-            if (g.equalsIgnoreCase(gen)) return true; // case-insensitive
+            if (g.equalsIgnoreCase(gen)) return true;
         }
         return false;
     }
 
+    private void setLoading(boolean show) {
+        if (progress != null) progress.setVisibility(show ? View.VISIBLE : View.GONE);
+        if (show) emptyView.setVisibility(View.GONE);
+    }
+
+    private int dp(int v) {
+        float d = getResources().getDisplayMetrics().density;
+        return Math.round(v * d);
+    }
 }
