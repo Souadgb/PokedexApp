@@ -1,45 +1,48 @@
 package com.example.pokedexapp;
 
 import android.os.Bundle;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.fragment.app.Fragment;
 
-import com.example.pokedexapp.ui.dashboard.FavoritesFragment;
-import com.example.pokedexapp.ui.home.ListFragment;
-import com.example.pokedexapp.ui.notifications.DetailFragment;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+
+import androidx.navigation.NavController;
+import androidx.navigation.fragment.NavHostFragment;
+import androidx.navigation.ui.AppBarConfiguration;
+import androidx.navigation.ui.NavigationUI;
 
 public class MainActivity extends AppCompatActivity {
 
-    private final Fragment listFragment = new ListFragment();
-    private final Fragment favoritesFragment = new FavoritesFragment();
-    private final Fragment detailFragment = new DetailFragment();
+    private AppBarConfiguration appBarConfiguration;
+    private NavController navController;
 
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
+    protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         BottomNavigationView navView = findViewById(R.id.nav_view);
 
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.nav_host_fragment_activity_main, listFragment)
-                .commit();
+        // Top-level destinations (no Up arrow on these)
+        appBarConfiguration = new AppBarConfiguration.Builder(
+                R.id.navigation_home,
+                R.id.navigation_dashboard
+        ).build();
 
-        navView.setOnItemSelectedListener(item -> {
-            Fragment selected = null;
-            int id = item.getItemId();
+        NavHostFragment navHostFragment =
+                (NavHostFragment) getSupportFragmentManager().findFragmentById(R.id.nav_host_fragment_activity_main);
+        if (navHostFragment == null) {
+            throw new IllegalStateException("NavHostFragment not found");
+        }
+        navController = navHostFragment.getNavController();
 
-            if (id == R.id.navigation_home) selected = listFragment;
-            else if (id == R.id.navigation_dashboard) selected = favoritesFragment;
-            else if (id == R.id.navigation_notifications) selected = detailFragment;
+        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
+        NavigationUI.setupWithNavController(navView, navController);
+    }
 
-            if (selected != null) {
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.nav_host_fragment_activity_main, selected)
-                        .commit();
-            }
-            return true;
-        });
+    @Override
+    public boolean onSupportNavigateUp() {
+        // ✅ Make the ActionBar back arrow actually navigate up
+        return NavigationUI.navigateUp(navController, appBarConfiguration) || super.onSupportNavigateUp();
     }
 }

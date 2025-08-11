@@ -4,4 +4,8 @@
     <string name="title_dashboard">Dashboard</string>
     <string name="title_notifications">Notifications</string>
     <string name="favoris">Favoris</string>
+    <string name="title_list">Liste</string>
+    <string name="title_favorites">Favoris</string>
+    <string name="title_detail">Détails</string>
+
 </resources>

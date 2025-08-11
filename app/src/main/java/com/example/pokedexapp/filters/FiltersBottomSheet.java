@@ -17,6 +17,7 @@ import com.google.android.material.slider.RangeSlider;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 public class FiltersBottomSheet extends BottomSheetDialogFragment {
 
@@ -79,8 +80,9 @@ public class FiltersBottomSheet extends BottomSheetDialogFragment {
         TextView btnReset           = view.findViewById(R.id.btn_reset);
         TextView btnApply           = view.findViewById(R.id.btn_apply);
 
-        createToggleChips(containerTypes, allTypes, state.selectedTypes);
-        createToggleChips(containerGens,  allGens,  state.selectedGenerations);
+        // ✅ Types stockés en lowercase, Générations gardées telles quelles
+        createToggleChips(containerTypes, allTypes, state.selectedTypes, true);
+        createToggleChips(containerGens,  allGens,  state.selectedGenerations, false);
 
         sliderWeight.setValues((float) state.minWeightKg, (float) state.maxWeightKg);
         labelWeight.setText((int) state.minWeightKg + " – " + (int) state.maxWeightKg + " kg");
@@ -108,8 +110,9 @@ public class FiltersBottomSheet extends BottomSheetDialogFragment {
 
             containerTypes.removeAllViews();
             containerGens.removeAllViews();
-            createToggleChips(containerTypes, allTypes, state.selectedTypes);
-            createToggleChips(containerGens,  allGens,  state.selectedGenerations);
+            // ✅ Recrée avec la même règle
+            createToggleChips(containerTypes, allTypes, state.selectedTypes, true);
+            createToggleChips(containerGens,  allGens,  state.selectedGenerations, false);
 
             sliderWeight.setValues(0f, 999f);
             sliderHeight.setValues(0f, 20f);
@@ -124,20 +127,27 @@ public class FiltersBottomSheet extends BottomSheetDialogFragment {
         });
     }
 
-    private void createToggleChips(LinearLayout container, List<String> items, List<String> selected) {
+    /** @param storeLowercase true => stocke en lowercase (types), false => garde tel quel (générations) */
+    private void createToggleChips(LinearLayout container,
+                                   List<String> items,
+                                   List<String> selected,
+                                   boolean storeLowercase) {
         LayoutInflater inf = LayoutInflater.from(getContext());
         for (String it : items) {
             View v = inf.inflate(R.layout.view_chip_toggle, container, false); // root is TextView
             TextView chip = (TextView) v;
             chip.setText(it.toUpperCase());
-            chip.setSelected(selected.contains(it.toLowerCase()));
+
+            String key = storeLowercase ? it.toLowerCase(Locale.ROOT) : it;
+            chip.setSelected(selected.contains(key));
+
             chip.setOnClickListener(view -> {
+                String k = storeLowercase ? it.toLowerCase(Locale.ROOT) : it;
                 view.setSelected(!view.isSelected());
-                String key = it.toLowerCase();
                 if (view.isSelected()) {
-                    if (!selected.contains(key)) selected.add(key);
+                    if (!selected.contains(k)) selected.add(k);
                 } else {
-                    selected.remove(key);
+                    selected.remove(k);
                 }
             });
             container.addView(chip);

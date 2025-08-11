@@ -27,9 +27,9 @@ public class PokemonFetcher {
         requestQueue = Volley.newRequestQueue(context.getApplicationContext());
     }
 
-    /** Récupère les 151 premiers noms de Pokémon */
+    /** Récupère les 1025 premiers noms de Pokémon */
     public void fetchPokemonList(Consumer<List<String>> onSuccess, Consumer<String> onError) {
-        String url = BASE_URL + "pokemon?limit=151";
+        String url = BASE_URL + "pokemon?limit=1025";
 
         JsonObjectRequest request = new JsonObjectRequest(
                 Request.Method.GET, url, null,

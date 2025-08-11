@@ -10,6 +10,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
+import androidx.navigation.fragment.NavHostFragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -52,16 +53,12 @@ public class ListFragment extends Fragment implements FiltersBottomSheet.OnApply
         recycler = v.findViewById(R.id.recycler_pokemon);
         recycler.setLayoutManager(new GridLayoutManager(getContext(), 2));
 
+        // ✅ Use NavController to navigate to Detail (keeps bottom nav working)
         PokemonAdapter.OnItemClickListener onClick = pokemon -> {
             Bundle args = new Bundle();
             args.putString(DetailFragment.ARG_NAME_OR_ID, pokemon.getName());
-            DetailFragment fragment = new DetailFragment();
-            fragment.setArguments(args);
-            requireActivity().getSupportFragmentManager()
-                    .beginTransaction()
-                    .replace(R.id.nav_host_fragment_activity_main, fragment)
-                    .addToBackStack(null)
-                    .commit();
+            NavHostFragment.findNavController(ListFragment.this)
+                    .navigate(R.id.navigation_detail, args);
         };
 
         adapter = new PokemonAdapter(filteredList, onClick);
@@ -74,7 +71,7 @@ public class ListFragment extends Fragment implements FiltersBottomSheet.OnApply
 
         View.OnClickListener openSheet = vv -> {
             FiltersBottomSheet s = FiltersBottomSheet.newInstance(ALL_TYPES, ALL_GENS, currentState);
-            s.setOnApplyListener(this); // make sure we always receive the callback
+            s.setOnApplyListener(this); // ensure we always receive the callback
             s.show(getParentFragmentManager(), "filters");
         };
         chipType.setOnClickListener(openSheet);
@@ -135,9 +132,14 @@ public class ListFragment extends Fragment implements FiltersBottomSheet.OnApply
         }
         return false;
     }
-
     private boolean matchesGens(Pokemon p, List<String> selectedGens) {
         if (selectedGens == null || selectedGens.isEmpty()) return true;
-        return selectedGens.contains(p.getGeneration());
+        String gen = p.getGeneration();
+        if (gen == null) return false;
+        for (String g : selectedGens) {
+            if (g.equalsIgnoreCase(gen)) return true; // case-insensitive
+        }
+        return false;
     }
+
 }

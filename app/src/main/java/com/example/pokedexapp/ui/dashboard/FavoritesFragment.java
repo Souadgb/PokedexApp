@@ -8,6 +8,7 @@ import android.view.ViewGroup;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+import androidx.navigation.fragment.NavHostFragment;
 
 import com.example.pokedexapp.AppDatabase;
 import com.example.pokedexapp.FavoritePokemon;
@@ -34,7 +35,6 @@ public class FavoritesFragment extends Fragment {
         recyclerView.setLayoutManager(new GridLayoutManager(getContext(), 2));
 
         loadFavorites(); // first load
-
         return view;
     }
 
@@ -58,29 +58,15 @@ public class FavoritesFragment extends Fragment {
             }
 
             requireActivity().runOnUiThread(() -> {
-                // click opens the detail page from favorites
                 PokemonAdapter.OnItemClickListener onClick = pokemon -> {
                     Bundle args = new Bundle();
                     args.putString(DetailFragment.ARG_NAME_OR_ID, pokemon.getName());
-
-                    DetailFragment fragment = new DetailFragment();
-                    fragment.setArguments(args);
-
-                    requireActivity().getSupportFragmentManager()
-                            .beginTransaction()
-                            .replace(R.id.nav_host_fragment_activity_main, fragment) // change container id if different
-                            .addToBackStack(null)
-                            .commit();
+                    NavHostFragment.findNavController(FavoritesFragment.this)
+                            .navigate(R.id.navigation_detail, args);
                 };
 
-                if (adapter == null) {
-                    adapter = new PokemonAdapter(favorites, onClick);
-                    recyclerView.setAdapter(adapter);
-                } else {
-                    // If your adapter has a setter, use it; otherwise recreate adapter
-                    adapter = new PokemonAdapter(favorites, onClick);
-                    recyclerView.setAdapter(adapter);
-                }
+                adapter = new PokemonAdapter(favorites, onClick);
+                recyclerView.setAdapter(adapter);
             });
         }).start();
     }
