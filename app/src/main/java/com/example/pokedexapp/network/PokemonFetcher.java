@@ -6,12 +6,14 @@ import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
+import com.example.pokedexapp.Pokemon;
 import com.example.pokedexapp.PokemonDetail;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
@@ -116,5 +118,81 @@ public class PokemonFetcher {
                                     Consumer<PokemonDetail> onSuccess,
                                     Consumer<String> onError) {
         fetchPokemonDetailsByNameOrId(name, onSuccess, onError);
+    }
+
+    // --------------------------------------------------------------------
+    // ✅ NOUVEAU: récupère les 151 premiers Pokémon en objets `Pokemon`
+    // (champs prêts pour le filtrage: types lowercase, weightKg, heightM, generation)
+    // --------------------------------------------------------------------
+    public void fetchFirst151Pokemon(Consumer<List<Pokemon>> onSuccess, Consumer<String> onError) {
+        fetchPokemonList(names -> {
+            if (names == null || names.isEmpty()) {
+                onSuccess.accept(new ArrayList<>());
+                return;
+            }
+
+            List<Pokemon> acc = Collections.synchronizedList(new ArrayList<>(names.size()));
+            final int total = names.size();
+            final int[] done = {0};
+
+            for (String name : names) {
+                fetchPokemonDetailsByNameOrId(name, detail -> {
+                    acc.add(mapToPokemon(detail));
+                    int d = ++done[0];
+                    if (d == total) {
+                        onSuccess.accept(new ArrayList<>(acc));
+                    }
+                }, err -> {
+                    // ignore this one, continue
+                    int d = ++done[0];
+                    if (d == total) {
+                        onSuccess.accept(new ArrayList<>(acc));
+                    }
+                });
+            }
+
+        }, onError);
+    }
+
+    // ---- mapping helpers ----
+    private static Pokemon mapToPokemon(PokemonDetail d) {
+        if (d == null) return null;
+
+        List<String> lowered = new ArrayList<>();
+        if (d.getTypes() != null) {
+            for (String t : d.getTypes()) {
+                if (t != null) lowered.add(t.toLowerCase(Locale.ROOT));
+            }
+        }
+
+        double weightKg = d.getWeight() / 10.0; // hg -> kg
+        double heightM  = d.getHeight() / 10.0; // dm -> m
+        String gen = genFromId(d.getId());
+
+        String imageUrl = d.getImageUrl();
+        if (imageUrl == null || imageUrl.isEmpty()) {
+            imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/" + d.getId() + ".png";
+        }
+
+        // Optionnel: capitaliser le nom
+        String name = d.getName();
+        if (name != null && !name.isEmpty()) {
+            name = name.substring(0,1).toUpperCase(Locale.ROOT) + name.substring(1);
+        }
+
+        return new Pokemon(name, imageUrl, lowered, weightKg, heightM, gen);
+    }
+
+    private static String genFromId(int id) {
+        if (id >= 1   && id <= 151) return "Gen I";
+        if (id >= 152 && id <= 251) return "Gen II";
+        if (id >= 252 && id <= 386) return "Gen III";
+        if (id >= 387 && id <= 493) return "Gen IV";
+        if (id >= 494 && id <= 649) return "Gen V";
+        if (id >= 650 && id <= 721) return "Gen VI";
+        if (id >= 722 && id <= 809) return "Gen VII";
+        if (id >= 810 && id <= 898) return "Gen VIII";
+        if (id >= 899 && id <= 1025) return "Gen IX";
+        return "Gen ?";
     }
 }

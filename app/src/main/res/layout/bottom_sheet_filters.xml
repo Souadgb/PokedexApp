@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:fillViewport="true"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:padding="16dp"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <TextView
+            android:text="Types"
+            android:textStyle="bold"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <HorizontalScrollView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:overScrollMode="never">
+            <LinearLayout
+                android:id="@+id/container_types"
+                android:orientation="horizontal"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </HorizontalScrollView>
+
+        <TextView
+            android:text="Générations"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <LinearLayout
+            android:id="@+id/container_gens"
+            android:orientation="horizontal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:text="Poids (kg)"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:id="@+id/label_weight"
+            android:text="0 – 999 kg"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <com.google.android.material.slider.RangeSlider
+            android:id="@+id/slider_weight"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:valueFrom="0"
+            android:valueTo="999"
+            android:stepSize="1"/>
+
+        <TextView
+            android:text="Taille (m)"
+            android:textStyle="bold"
+            android:layout_marginTop="16dp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <TextView
+            android:id="@+id/label_height"
+            android:text="0.0 – 20.0 m"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"/>
+
+        <com.google.android.material.slider.RangeSlider
+            android:id="@+id/slider_height"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:valueFrom="0"
+            android:valueTo="20"
+            android:stepSize="0.1"/>
+
+        <LinearLayout
+            android:orientation="horizontal"
+            android:gravity="end"
+            android:layout_marginTop="12dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+
+            <TextView
+                android:id="@+id/btn_reset"
+                android:text="RÉINITIALISER"
+                android:background="@drawable/chip_bg"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:includeFontPadding="false"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+
+            <TextView
+                android:id="@+id/btn_apply"
+                android:text="APPLIQUER"
+                android:background="@drawable/chip_trigger_bg"
+                android:textColor="@android:color/white"
+                android:paddingLeft="14dp"
+                android:paddingRight="14dp"
+                android:paddingTop="8dp"
+                android:paddingBottom="8dp"
+                android:includeFontPadding="false"
+                android:textStyle="bold"
+                android:textSize="12sp"
+                android:layout_marginStart="8dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </LinearLayout>
+
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
