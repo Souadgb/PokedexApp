@@ -31,9 +31,7 @@ public class ListFragment extends Fragment implements FiltersBottomSheet.OnApply
     private RecyclerView recycler;
     private PokemonAdapter adapter;
 
-    // Full source (unfiltered)
     private final List<Pokemon> originalList = new ArrayList<>();
-    // Display list (filtered)
     private final List<Pokemon> filteredList = new ArrayList<>();
 
     private FilterState currentState = new FilterState();
@@ -46,7 +44,8 @@ public class ListFragment extends Fragment implements FiltersBottomSheet.OnApply
             "Gen I","Gen II","Gen III","Gen IV","Gen V","Gen VI","Gen VII","Gen VIII","Gen IX"
     ));
 
-    @Nullable @Override
+    @Nullable
+    @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_pokemon_list, container, false);
 
@@ -75,6 +74,7 @@ public class ListFragment extends Fragment implements FiltersBottomSheet.OnApply
 
         View.OnClickListener openSheet = vv -> {
             FiltersBottomSheet s = FiltersBottomSheet.newInstance(ALL_TYPES, ALL_GENS, currentState);
+            s.setOnApplyListener(this); // make sure we always receive the callback
             s.show(getParentFragmentManager(), "filters");
         };
         chipType.setOnClickListener(openSheet);
@@ -82,35 +82,36 @@ public class ListFragment extends Fragment implements FiltersBottomSheet.OnApply
         chipWeight.setOnClickListener(openSheet);
         chipHeight.setOnClickListener(openSheet);
 
-        // 🔗 Charge ta vraie longue liste via PokeAPI
-        loadFromPokeApi();
-
-        // Affiche (au cas où la liste arrive un peu plus tard)
+        // Load data incrementally so the page is not blank at first
+        loadFromPokeApiIncremental();
         applyFilters();
 
         return v;
     }
 
-    private void loadFromPokeApi() {
+    private void loadFromPokeApiIncremental() {
         PokemonFetcher fetcher = new PokemonFetcher(requireContext());
 
-        fetcher.fetchFirst151Pokemon(list -> {
-            // Callback (main thread via Volley). On pousse dans le filtre.
-            updatePokemonData(list);
+        fetcher.fetchFirst151PokemonIncremental(list -> {
+            if (!isAdded()) return;
+            updatePokemonData(list); // refresh as items arrive
         }, err -> {
-            Toast.makeText(requireContext(), "Erreur PokeAPI: " + err, Toast.LENGTH_SHORT).show();
+            if (isAdded()) {
+                Toast.makeText(requireContext(), "Erreur PokeAPI: " + err, Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
-    // ---- Public entrypoint for (re)loading data ----
+    // Public entrypoint if you reload elsewhere
     public void updatePokemonData(List<Pokemon> newList) {
         originalList.clear();
         if (newList != null) originalList.addAll(newList);
-        applyFilters(); // shows all first; filters apply when user picks them
+        applyFilters();
     }
 
-    // ---- Filters ----
-    @Override public void onApply(FilterState state) {
+    // ===== Filters =====
+    @Override
+    public void onApply(FilterState state) { // from FiltersBottomSheet.OnApplyFilters
         currentState = state;
         applyFilters();
     }
@@ -128,7 +129,7 @@ public class ListFragment extends Fragment implements FiltersBottomSheet.OnApply
     }
 
     private boolean matchesTypes(Pokemon p, List<String> selectedTypes) {
-        if (selectedTypes == null || selectedTypes.isEmpty()) return true; // no filter -> include
+        if (selectedTypes == null || selectedTypes.isEmpty()) return true;
         for (String t : p.getTypes()) {
             if (selectedTypes.contains(t.toLowerCase(Locale.ROOT))) return true;
         }
@@ -136,7 +137,7 @@ public class ListFragment extends Fragment implements FiltersBottomSheet.OnApply
     }
 
     private boolean matchesGens(Pokemon p, List<String> selectedGens) {
-        if (selectedGens == null || selectedGens.isEmpty()) return true; // no filter -> include
+        if (selectedGens == null || selectedGens.isEmpty()) return true;
         return selectedGens.contains(p.getGeneration());
     }
 }

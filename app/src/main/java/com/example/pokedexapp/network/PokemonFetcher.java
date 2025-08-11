@@ -52,10 +52,7 @@ public class PokemonFetcher {
         requestQueue.add(request);
     }
 
-    /**
-     * Détails d’un Pokémon par nom OU id (ex: "pikachu" ou "25").
-     * Retourne: id, name, height(dm), weight(hg), types, image officielle (fallback: front_default).
-     */
+    /** Détails par nom ou id */
     public void fetchPokemonDetailsByNameOrId(String nameOrId,
                                               Consumer<PokemonDetail> onSuccess,
                                               Consumer<String> onError) {
@@ -120,14 +117,27 @@ public class PokemonFetcher {
         fetchPokemonDetailsByNameOrId(name, onSuccess, onError);
     }
 
-    // --------------------------------------------------------------------
-    // ✅ NOUVEAU: récupère les 151 premiers Pokémon en objets `Pokemon`
-    // (champs prêts pour le filtrage: types lowercase, weightKg, heightM, generation)
-    // --------------------------------------------------------------------
+    // ------------------------------------------------------------
+    // ✅ Complet (une seule fois à la fin)
+    // ------------------------------------------------------------
     public void fetchFirst151Pokemon(Consumer<List<Pokemon>> onSuccess, Consumer<String> onError) {
+        fetchFirst151PokemonInternal(null, onSuccess, onError);
+    }
+
+    // ------------------------------------------------------------
+    // ✅ INCRÉMENTAL (onUpdate appelé au fur et à mesure)
+    // ------------------------------------------------------------
+    public void fetchFirst151PokemonIncremental(Consumer<List<Pokemon>> onUpdate, Consumer<String> onError) {
+        fetchFirst151PokemonInternal(onUpdate, null, onError);
+    }
+
+    private void fetchFirst151PokemonInternal(Consumer<List<Pokemon>> onUpdate,
+                                              Consumer<List<Pokemon>> onSuccess,
+                                              Consumer<String> onError) {
         fetchPokemonList(names -> {
             if (names == null || names.isEmpty()) {
-                onSuccess.accept(new ArrayList<>());
+                if (onUpdate != null) onUpdate.accept(new ArrayList<>());
+                if (onSuccess != null) onSuccess.accept(new ArrayList<>());
                 return;
             }
 
@@ -137,17 +147,23 @@ public class PokemonFetcher {
 
             for (String name : names) {
                 fetchPokemonDetailsByNameOrId(name, detail -> {
-                    acc.add(mapToPokemon(detail));
+                    Pokemon mapped = mapToPokemon(detail);
+                    if (mapped != null) acc.add(mapped);
+
                     int d = ++done[0];
-                    if (d == total) {
+
+                    // push incremental updates every 5 items (and first item), feels snappy
+                    if (onUpdate != null && (acc.size() == 1 || acc.size() % 5 == 0 || d == total)) {
+                        onUpdate.accept(new ArrayList<>(acc));
+                    }
+
+                    if (d == total && onSuccess != null) {
                         onSuccess.accept(new ArrayList<>(acc));
                     }
                 }, err -> {
-                    // ignore this one, continue
                     int d = ++done[0];
-                    if (d == total) {
-                        onSuccess.accept(new ArrayList<>(acc));
-                    }
+                    if (onUpdate != null && d == total) onUpdate.accept(new ArrayList<>(acc));
+                    if (d == total && onSuccess != null) onSuccess.accept(new ArrayList<>(acc));
                 });
             }
 
@@ -174,7 +190,6 @@ public class PokemonFetcher {
             imageUrl = "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/" + d.getId() + ".png";
         }
 
-        // Optionnel: capitaliser le nom
         String name = d.getName();
         if (name != null && !name.isEmpty()) {
             name = name.substring(0,1).toUpperCase(Locale.ROOT) + name.substring(1);
